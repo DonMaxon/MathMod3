@@ -1,13 +1,11 @@
 import sys
-sys.path.append('C:\\Users\Max\AppData\Local\Programs\Python\Python310\Lib\site-packages')
-
 import numpy as np
 import pandas as pd
 
 from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication
+from model import SMO
 from PyQt5 import QtCore
-from pyqtgraph import PlotWidget
 
 def get_values():
     modelling_time = int(form.lineEdit.text())
@@ -27,6 +25,11 @@ def get_values():
 
 def solve():
     modelling_time, num_of_lines, time_coeff, max_num_of_lines, duration_time, capacity = get_values()
+    system = SMO(mod_time=modelling_time, start_lines=num_of_lines, max_lines=max_num_of_lines, time_coeff=time_coeff,
+                 dur_coeff=duration_time, cap=capacity)
+    print('SMO_created')
+    for i in range(modelling_time):
+        system.step()
 
 
 Form, Window = uic.loadUiType('interface.ui')
