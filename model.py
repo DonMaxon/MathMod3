@@ -42,7 +42,7 @@ class SMOQueue:
 		self.len = 0
 
 	def put(self, task):
-		if self.q.qsize() == self.cap:
+		if self.len == self.cap:
 			return False
 		else:
 			self.q.put(task)
@@ -50,7 +50,7 @@ class SMOQueue:
 			return True
 
 	def get_out(self):
-		if not self.q.empty():
+		if self.len != 0:
 			self.len -= 1
 			return self.q.get()
 		else:
@@ -84,37 +84,36 @@ class SMO:
 
 	def step(self):
 		count = self.times[self.times < self.current_time].shape[0]
-		if count != 0:
-			self.tasks_num += count
-			if self.q.len != 0:
-				for i in range(self.q.len):
-					task = self.q.get_out()
-					put = False
-					if task:
-						for j in range(self.max_lines):
-							if self.lines[j].status and self.lines[j].put(task):
-								put = True
-								break
-						if put:
-							self.accepted += 1
-			for i in range(count):
-				task = Task(-log(random())/self.dur_coeff)
-				put = False
-				for j in range(self.max_lines):
-					if self.lines[j].status and self.lines[j].put(task):
-						put = True
-						break
-				if put:
+		self.tasks_num += count
+		if self.q.len != 0:
+			for i in range(self.q.len):
+				task = self.q.get_out()
+				if task:
+					for j in range(self.max_lines):
+						if self.lines[j].status and self.lines[j].put(task):
+							break
+		for i in range(count):
+			task = Task(-log(random())/self.dur_coeff)
+			put = False
+			for j in range(self.max_lines):
+				if self.lines[j].status and self.lines[j].put(task):
+					put = True
 					self.accepted += 1
-				elif not self.q.put(task):
+					break
+			if not put:
+				if not self.q.put(task):
 					if self.lines_active < self.max_lines:
 						for k in range(self.max_lines):
 							if not self.lines[k].status:
 								self.lines[k].status = True
 								self.lines[k].put(task)
+								self.accepted += 1
 								self.lines_active += 1
+								break
 					else:
 						self.rejected += 1
+				else:
+					self.accepted += 1
 		for line in self.lines:
 			line.upd_free()
 		self.current_time += 1
